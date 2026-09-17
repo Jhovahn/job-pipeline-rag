@@ -18,6 +18,37 @@ system.
 
 ## How it works
 
+```mermaid
+flowchart TD
+    subgraph idx["Index time (run once per report change)"]
+        R["data/reports/*.md"] --> I["app/ingest.py<br/>split into chunks by ## heading"]
+        I --> E["sentence-transformers<br/>embed each chunk locally"]
+        E --> V[("index/vectors.npy + chunks.json")]
+        R --> S["app/structured.py<br/>parse Machine Summary YAML"]
+    end
+
+    subgraph qt["Query time (per question)"]
+        Q(["question"]) --> RT["app/retrieve.py<br/>cosine similarity, top-k"]
+        V --> RT
+        RT --> RAG["app/rag.py<br/>extractive or generative answer"]
+        RAG --> A(["answer + citations"])
+        S --> ST["CLI stats / GET /stats<br/>exact score &amp; risk lookups"]
+        ST --> A2(["exact answer, no embeddings"])
+    end
+
+    subgraph ev["Eval loop (rerun after any change)"]
+        G["eval/golden.json"] --> RE["eval/run_eval.py"]
+        RE -.-> RAG
+        RE --> SC(["score, e.g. 5/5 (100%)"])
+    end
+```
+
+Two separate answer paths, on purpose: open-ended questions ("what's my
+most common gap?") go through embeddings and retrieval; exact questions
+("which company scored highest?") go through parsed structured data
+instead, since embedding similarity can't reliably compare two numbers
+(see the eval-history caveat below for why that distinction exists).
+
 1. **`app/ingest.py`** — splits each report into chunks (by `## ` heading),
    embeds them locally with `sentence-transformers` (no API key required),
    and saves the vectors + metadata to `index/`.
