@@ -10,8 +10,10 @@ from pydantic import BaseModel
 
 from app.rag import answer_question
 from app.retrieve import Retriever
+from app.structured import highest_scoring, load_all_summaries, lowest_scoring
 
 INDEX_DIR = Path(os.environ.get("RAG_INDEX_DIR", "index"))
+REPORTS_DIR = Path(os.environ.get("RAG_REPORTS_DIR", "data/reports"))
 
 app = FastAPI(title="Job Pipeline RAG", version="0.1.0")
 _retriever: Retriever | None = None
@@ -49,3 +51,14 @@ def ask(req: AskRequest) -> AskResponse:
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/stats")
+def stats() -> dict:
+    """Exact/structured answers, parsed from Machine Summary YAML rather than embeddings."""
+    summaries = load_all_summaries(REPORTS_DIR)
+    return {
+        "count": len(summaries),
+        "highest": highest_scoring(summaries),
+        "lowest": lowest_scoring(summaries),
+    }

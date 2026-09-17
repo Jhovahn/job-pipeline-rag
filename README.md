@@ -30,7 +30,16 @@ system.
    verbatim with its source — zero dependencies, fully deterministic), or
    **generative mode** if `ANTHROPIC_API_KEY` is set (asks Claude to
    synthesize a short answer grounded only in the retrieved excerpts).
-4. **`eval/`** — the part that matters most. `golden.json` is a fixed set
+4. **`app/structured.py`** — parses each report's `## Machine Summary` YAML
+   block into structured data, for questions that need an exact answer
+   (highest/lowest score, filter by risk level) rather than a semantic
+   match. Embedding similarity can't reliably tell "score: 4.0" from
+   "score: 2.4" — two report headers that both say `**Score:** N.N/5` look
+   nearly identical to a sentence embedding. Exact/numeric questions get
+   routed to structured lookups; open-ended narrative questions go through
+   the RAG path. Exposed as `python cli.py stats --highest/--lowest/--risk-level`
+   and `GET /stats`.
+5. **`eval/`** — the part that matters most. `golden.json` is a fixed set
    of question/expected-answer pairs. `run_eval.py` runs every question
    against the live pipeline and grades it (keyword + citation match),
    producing a score. Change the chunking strategy, the embedding model,
@@ -78,6 +87,16 @@ your own reports, and run:
 python -m eval.run_eval --golden eval/golden.local.json
 ```
 
+## Running the tests
+
+```bash
+python -m pytest -q
+```
+
+Covers chunk-splitting, structured YAML extraction, and eval-grading logic —
+the parts of this project that are easy to silently break while iterating
+on retrieval quality.
+
 ## Eval history (a real before/after)
 
 The eval harness isn't decorative — it caught a real bug during development.
@@ -110,10 +129,23 @@ That's the actual point of having an eval suite: not to hit 100% on the
 first run, but to have a number that moves when you fix something, and
 tells you whether your fix helped.
 
+**A caveat on that 100%, stated plainly:** `gap-001` ("which company
+scored highest") passed by luck at the 60% checkpoint — the sample corpus
+is small enough that both reports' scores landed in the same 3-chunk
+window, not because the pipeline could actually compare two numbers. That
+gap is why `app/structured.py` exists: exact/numeric questions now route
+to parsed YAML instead of embedding similarity. The eval suite still
+tests the RAG path's citation and topical-match behavior; `tests/test_structured.py`
+tests the exact-comparison path directly, since a golden-question eval
+grounded in embedding retrieval isn't the right tool to verify it.
+
 ## What this is not
 
 A production RAG system. It's intentionally small: no vector database,
-no reranking, no chunk-overlap tuning, no query rewriting. Every one of
-those is a legitimate next step, and each is a clearly scoped, separately
-demonstrable improvement — which is the point of having a working eval
-score to improve against in the first place.
+no reranking, no chunk-overlap tuning, no query rewriting, and question
+routing between the structured and semantic paths is manual (you call
+`stats` or `ask` yourself; the system doesn't yet classify which one a
+question needs). Every one of those is a legitimate next step, and each
+is a clearly scoped, separately demonstrable improvement — which is the
+point of having a working eval score to improve against in the first
+place.
