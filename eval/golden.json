@@ -1,0 +1,32 @@
+[
+  {
+    "id": "gap-001",
+    "question": "Which company's evaluation scored the highest?",
+    "expected_keywords": ["ExampleCorp", "4.0"],
+    "expected_sources": ["001-examplecorp"]
+  },
+  {
+    "id": "gap-002",
+    "question": "What is the most common gap on the Forward Deployed Engineer evaluation?",
+    "expected_keywords": ["FDE", "title"],
+    "expected_sources": ["001-examplecorp"]
+  },
+  {
+    "id": "gap-003",
+    "question": "Does the candidate have any documented AI or RAG project with a measurable outcome?",
+    "expected_keywords": ["no documented ai"],
+    "expected_sources": ["002-sampletech"]
+  },
+  {
+    "id": "gap-004",
+    "question": "What legitimacy tier was the ExampleCorp posting given?",
+    "expected_keywords": ["High Confidence"],
+    "expected_sources": ["001-examplecorp"]
+  },
+  {
+    "id": "gap-005",
+    "question": "Was any cloud deployment experience (AWS, GCP, Azure) found for the ExampleCorp role?",
+    "expected_keywords": ["no hands-on cloud"],
+    "expected_sources": ["001-examplecorp"]
+  }
+]

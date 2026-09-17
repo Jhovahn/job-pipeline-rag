@@ -1,0 +1,21 @@
+# Real personal job-search reports — never commit these.
+data/reports/*
+!data/reports/.gitkeep
+
+# Built embedding index (derived from whichever reports were ingested last).
+index/*
+!index/.gitkeep
+
+# Private eval set built from real report data.
+eval/golden.local.json
+eval/results.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+
+# OS
+.DS_Store
